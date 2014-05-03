@@ -21,7 +21,7 @@ require("data.table")
 require("dplyr")
 require("ggplot2")
 require("maps")
-require("grid")
+require("gridExtra")
 
 #+ load.data, echo=FALSE
 tmp <- Quandl("FBI_UCR/USCRIME_TYPE_VIOLENTCRIMERATE")
