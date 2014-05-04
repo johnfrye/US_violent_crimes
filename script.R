@@ -140,8 +140,3 @@ banner <- ggplot(data = data.table(x = 0, y = 0),
 png("US_violent_crime_rate_by_state_2010.png", width = 600, height = 800)
 grid.arrange(graph, banner, heights = c(1, .05))
 dev.off()
-
-#+ plot.US.map, echo=FALSE
-
-
-
