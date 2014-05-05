@@ -21,6 +21,7 @@ require("data.table")
 require("dplyr")
 require("ggplot2")
 require("maps")
+require("mapdata")
 require("gridExtra")
 require("gtable")
 
@@ -109,7 +110,11 @@ graph <- ggplot(data = tmp,
   xlab("US state") +
   ylab("Violent crimes per\n100 000 inhabitants (2010)") +
   guides(fill = FALSE) +
-  geom_bar(stat = "identity", color = "white", fill = "dodgerblue4")
+  geom_bar(stat = "identity", color = "white", fill = "dodgerblue4") + 
+  geom_hline(data = filter(crime.data, state == "United States" & year == 2010),
+            aes(yintercept = rate), linetype = 2, ) + 
+  annotate("text", x = 25, y = 460, label = "National average", 
+           angle = -90, family = "Courier")
 
 inset <- ggplotGrob(ggplot(data = map_data("state") , 
                            aes(x = long, 
@@ -233,21 +238,103 @@ grid.arrange(g, banner, heights = c(1, .05))
 dev.off()
 
 #+ plot.US.map, echo=FALSE
-tmp <- as.data.table(map_data("state"))
+tmp <- filter(crime.data, year == 2010 & state != "United States")
 
-ggplot(data = map_data("state"), 
-       aes(x = long, 
-           y = lat, 
-           group = group)) + 
+hawaii <- map_data("worldHires", "Hawaii") %.%
+  mutate(region = "hawaii") %.%
+  filter(subregion == "Maui" | subregion == "Hawaii" | subregion == "Oahu" |
+           subregion == "Kauai" | subregion == "Molokai" | subregion == "Lanai" |
+           subregion == "Nihau" | subregion == "Kahoolawe")
+alaska <- map_data("world2Hires", "USA:Alaska") %.%
+  mutate(region = "alaska") %.%
+  filter(subregion == "Alaska")
+
+crime.by.state <- as.data.table(rbind(map_data("state"), 
+                                      hawaii, 
+                                      alaska)) %.%
+  group_by(region) %.%
+  mutate(rate = tmp$rate[tolower(tmp$state) == region])
+
+graph <- ggplot(data = filter(crime.by.state, region != "hawaii" & region != "alaska"), 
+                aes(x = long, 
+                    y = lat, 
+                    group = group,
+                    fill = rate)) + 
   theme_minimal() + 
   theme(line = element_blank(),
-        text = element_blank(),
-        title = element_blank(),
-        plot.margin = unit(c(0,0,-1,-1), "lines")) +
+        axis.title = element_blank(),
+        axis.line = element_blank(),
+        axis.text = element_blank()) +
   coord_fixed(ratio = 1) + 
-  geom_polygon(color = "white", fill = "dodgerblue4")
+  scale_fill_continuous(limits = c(0, max(crime.by.state$rate)), 
+                        low = "white", high = "firebrick4",
+                        name = "Violent crimes\nper 100 000\ninhabitants") +
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  geom_polygon(color = "white")
 
+inset1 <- ggplot(data = filter(crime.by.state, region == "district of columbia"), 
+                 aes(x = long, 
+                     y = lat, 
+                     group = group,
+                     fill = rate)) + 
+  theme_minimal() + 
+  theme(line = element_blank(),
+        axis.title = element_blank(),
+        axis.line = element_blank(),
+        axis.text = element_blank()) +
+  coord_fixed(ratio = 1) + 
+  scale_fill_continuous(limits = c(0, max(crime.by.state$rate)), 
+                        low = "white", high = "firebrick4",
+                        guide = "none") +
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  geom_polygon(color = "white")
 
+inset2 <- ggplot(data = filter(crime.by.state, region == "hawaii"), 
+                 aes(x = long, 
+                     y = lat, 
+                     group = group,
+                     fill = rate)) + 
+  theme_minimal() + 
+  theme(line = element_blank(),
+        axis.title = element_blank(),
+        axis.line = element_blank(),
+        axis.text = element_blank()) +
+  coord_fixed(ratio = 1) + 
+  scale_fill_continuous(limits = c(0, max(crime.by.state$rate)), 
+                        low = "white", high = "firebrick4",
+                        guide = "none") +
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  geom_polygon(color = "white")
 
+inset3 <- ggplot(data = filter(crime.by.state, region == "alaska" & long > 185), 
+                 aes(x = long, 
+                     y = lat, 
+                     group = group,
+                     fill = rate)) + 
+  theme_minimal() + 
+  theme(line = element_blank(),
+        axis.title = element_blank(),
+        axis.line = element_blank(),
+        axis.text = element_blank()) +
+  coord_fixed(ratio = 1) + 
+  scale_fill_continuous(limits = c(0, max(crime.by.state$rate)), 
+                        low = "white", high = "firebrick4",
+                        guide = "none") +
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  geom_polygon(color = "white")
 
+inset4 <- ggplot(data.table()) + 
+  geom_point() + xlim(0, 10) + ylim(0, 100) +
+  theme_minimal() + 
+  theme(line = element_blank(),
+        axis.title = element_blank(),
+        axis.line = element_blank(),
+        axis.text = element_blank()) 
 
+inset.line <- arrangeGrob(inset3, inset2, inset1, inset4, nrow = 1)
+grid.arrange(graph, inset.line,
+             heights = c(1, .5))
