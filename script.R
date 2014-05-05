@@ -112,9 +112,9 @@ graph <- ggplot(data = tmp,
   guides(fill = FALSE) +
   geom_bar(stat = "identity", color = "white", fill = "dodgerblue4") + 
   geom_hline(data = filter(crime.data, state == "United States" & year == 2010),
-            aes(yintercept = rate), linetype = 2, ) + 
+            aes(yintercept = rate), linetype = 2, color = "tomato3", size = 1) + 
   annotate("text", x = 25, y = 460, label = "National average", 
-           angle = -90, family = "Courier")
+           angle = -90, family = "Courier", color = "tomato3")
 
 inset <- ggplotGrob(ggplot(data = map_data("state") , 
                            aes(x = long, 
